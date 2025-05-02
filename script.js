@@ -105,15 +105,13 @@ const vcrEffect = new VCREffect(canvas, {
 // M3U8 Stream Configuration
 const streamUrls = [
     "https://live.presstv.ir/hls/ifilmar.m3u8",
-    // Add more M3U8 URLs here
-    // "http://example.com/stream2.m3u8",
-    // "http://example.com/stream3.m3u8"
+    "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/960eed04-3c1a-4ad7-87dd-7b64f78d0b0c/2.m3u8",
 ];
 let currentStreamIndex = 0;
 const videoElement = document.getElementById("tv-video");
 const snowEffect = document.querySelector(".snow-effect");
+const glitchEffect = document.querySelector(".glitch");
 let hls = null;
-let streamRotationInterval = null;
 
 // Create channel changer button
 function createChannelChanger() {
@@ -149,6 +147,10 @@ function initPlayer() {
         hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
             console.log("Manifest loaded, found " + data.levels.length + " quality levels");
             videoElement.play();
+            // Hide glitch effect when stream starts playing
+            setTimeout(() => {
+                glitchEffect.style.opacity = 0;
+            }, 500);
         });
         hls.on(Hls.Events.ERROR, (event, data) => {
             console.error("HLS Error:", data);
@@ -173,6 +175,7 @@ function initPlayer() {
         // Native HLS support (Safari)
         videoElement.addEventListener("loadedmetadata", () => {
             videoElement.play();
+            glitchEffect.style.opacity = 0;
         });
     } else {
         console.error("HLS is not supported in this browser");
@@ -191,37 +194,32 @@ function loadStream(url) {
 
 // Switch to next stream with static transition
 function switchToNextStream() {
-    // Clear any existing timeout to prevent multiple triggers
-    clearTimeout(streamRotationInterval);
-    
+    // Show glitch and snow effects
+    glitchEffect.style.opacity = 1;
     snowEffect.style.opacity = 1;
+    
     setTimeout(() => {
         currentStreamIndex = (currentStreamIndex + 1) % streamUrls.length;
         loadStream(streamUrls[currentStreamIndex]);
-        snowEffect.style.opacity = 0;
         
-        // Restart the auto-rotation timer
-        startStreamRotation();
+        // Hide effects after stream loads
+        setTimeout(() => {
+            snowEffect.style.opacity = 0;
+            glitchEffect.style.opacity = 0;
+        }, 1000);
     }, 2000); // 2 seconds of static before switching
-}
-
-// Auto-switch streams every 20 seconds
-function startStreamRotation() {
-    // Clear any existing interval
-    if (streamRotationInterval) {
-        clearInterval(streamRotationInterval);
-    }
-    streamRotationInterval = setInterval(switchToNextStream, 20000);
 }
 
 // Initialize everything when the page loads
 document.addEventListener("DOMContentLoaded", () => {
     initPlayer();
-    createChannelChanger(); // Add the manual channel changer button
+    createChannelChanger();
+    
+    // Hide glitch effect initially
+    glitchEffect.style.opacity = 0;
     
     if (streamUrls.length > 0) {
-        loadStream(streamUrls[currentStreamIndex]);
-        startStreamRotation();
+        loadStream(streamUrls[currentStreamIndex]); // Load first stream
     } else {
         console.error("No streams available in the playlist");
     }
