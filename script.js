@@ -91,6 +91,8 @@ class VCREffect {
     }
 }
 
+// ... (Keep all the VCREffect class code exactly the same) ...
+
 // Initialize VCR Effect
 const canvas = document.getElementById("canvas");
 const vcrEffect = new VCREffect(canvas, {
@@ -102,16 +104,38 @@ const vcrEffect = new VCREffect(canvas, {
     blur: 1
 });
 
-// M3U8 Stream Configuration
+// Stream Configuration
 const streamUrls = [
-    "https://live.presstv.ir/hls/ifilmar.m3u8",
-    "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/960eed04-3c1a-4ad7-87dd-7b64f78d0b0c/2.m3u8",
+    {
+        type: "hls",
+        url: "https://live.presstv.ir/hls/ifilmar.m3u8"
+    },
+    {
+        type: "hls", 
+        url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/960eed04-3c1a-4ad7-87dd-7b64f78d0b0c/2.m3u8"
+    },
+    {
+        type: "youtube",
+        url: "HRYSQ90PZDY" // Just the video ID
+    }
 ];
+
 let currentStreamIndex = 0;
 const videoElement = document.getElementById("tv-video");
 const snowEffect = document.querySelector(".snow-effect");
 const glitchEffect = document.querySelector(".glitch");
+const tvContainer = document.querySelector(".tv-container");
 let hls = null;
+
+// Create YouTube iframe (hidden by default)
+const youtubeIframe = document.createElement("iframe");
+youtubeIframe.style.display = "none";
+youtubeIframe.style.width = "100%";
+youtubeIframe.style.height = "100%";
+youtubeIframe.setAttribute("frameborder", "0");
+youtubeIframe.setAttribute("allow", "autoplay");
+youtubeIframe.setAttribute("allowfullscreen", "1");
+tvContainer.appendChild(youtubeIframe);
 
 // Create channel changer button
 function createChannelChanger() {
@@ -147,66 +171,86 @@ function initPlayer() {
         hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
             console.log("Manifest loaded, found " + data.levels.length + " quality levels");
             videoElement.play();
-            // Hide glitch effect when stream starts playing
-            setTimeout(() => {
-                glitchEffect.style.opacity = 0;
-            }, 500);
+            hideEffects();
         });
         hls.on(Hls.Events.ERROR, (event, data) => {
             console.error("HLS Error:", data);
             if (data.fatal) {
                 switch(data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
-                        console.error("Fatal network error encountered, try to recover");
                         hls.startLoad();
                         break;
                     case Hls.ErrorTypes.MEDIA_ERROR:
-                        console.error("Fatal media error encountered, try to recover");
                         hls.recoverMediaError();
                         break;
                     default:
-                        console.error("Unrecoverable error");
                         switchToNextStream();
                         break;
                 }
             }
         });
     } else if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
-        // Native HLS support (Safari)
         videoElement.addEventListener("loadedmetadata", () => {
             videoElement.play();
-            glitchEffect.style.opacity = 0;
+            hideEffects();
         });
     } else {
         console.error("HLS is not supported in this browser");
     }
 }
 
+function hideEffects() {
+    setTimeout(() => {
+        snowEffect.style.opacity = 0;
+        glitchEffect.style.opacity = 0;
+    }, 500);
+}
+
 // Load a stream
-function loadStream(url) {
-    if (hls) {
-        hls.loadSource(url);
-        hls.attachMedia(videoElement);
-    } else if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
-        videoElement.src = url;
+function loadStream(stream) {
+    // Show loading effects
+    glitchEffect.style.opacity = 1;
+    snowEffect.style.opacity = 1;
+    
+    if (stream.type === "hls") {
+        // Hide YouTube and show video element
+        youtubeIframe.style.display = "none";
+        videoElement.style.display = "block";
+        
+        if (hls) {
+            hls.loadSource(stream.url);
+            hls.attachMedia(videoElement);
+        } else if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
+            videoElement.src = stream.url;
+        }
+    } 
+    else if (stream.type === "youtube") {
+        // Hide video element and show YouTube
+        videoElement.style.display = "none";
+        youtubeIframe.style.display = "block";
+        youtubeIframe.src = `https://www.youtube.com/embed/${stream.url}?autoplay=1&mute=1&enablejsapi=1`;
+        
+        // YouTube doesn't give us a good loaded event, so we'll hide effects after a delay
+        setTimeout(hideEffects, 2000);
     }
 }
 
 // Switch to next stream with static transition
 function switchToNextStream() {
-    // Show glitch and snow effects
+    // Show full glitch effect
     glitchEffect.style.opacity = 1;
     snowEffect.style.opacity = 1;
+    
+    // Stop current playback
+    if (youtubeIframe.style.display === "block") {
+        youtubeIframe.src = ""; // Stop YouTube video
+    } else {
+        videoElement.pause();
+    }
     
     setTimeout(() => {
         currentStreamIndex = (currentStreamIndex + 1) % streamUrls.length;
         loadStream(streamUrls[currentStreamIndex]);
-        
-        // Hide effects after stream loads
-        setTimeout(() => {
-            snowEffect.style.opacity = 0;
-            glitchEffect.style.opacity = 0;
-        }, 1000);
     }, 2000); // 2 seconds of static before switching
 }
 
@@ -215,11 +259,12 @@ document.addEventListener("DOMContentLoaded", () => {
     initPlayer();
     createChannelChanger();
     
-    // Hide glitch effect initially
+    // Hide effects initially
     glitchEffect.style.opacity = 0;
+    snowEffect.style.opacity = 0;
     
     if (streamUrls.length > 0) {
-        loadStream(streamUrls[currentStreamIndex]); // Load first stream
+        loadStream(streamUrls[currentStreamIndex]);
     } else {
         console.error("No streams available in the playlist");
     }
