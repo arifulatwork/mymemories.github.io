@@ -91,9 +91,7 @@ class VCREffect {
     }
 }
 
-// ... (Keep all the VCREffect class code exactly the same) ...
-
-// Initialize VCR Effect
+// === STREAM SETUP ===
 const canvas = document.getElementById("canvas");
 const vcrEffect = new VCREffect(canvas, {
     opacity: 1,
@@ -104,20 +102,10 @@ const vcrEffect = new VCREffect(canvas, {
     blur: 1
 });
 
-// Stream Configuration
 const streamUrls = [
-    {
-        type: "hls",
-        url: "https://live.presstv.ir/hls/ifilmar.m3u8"
-    },
-    {
-        type: "hls", 
-        url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/960eed04-3c1a-4ad7-87dd-7b64f78d0b0c/2.m3u8"
-    },
-    {
-        type: "youtube",
-        url: "HRYSQ90PZDY" // Just the video ID
-    }
+    { type: "hls", url: "https://live.presstv.ir/hls/ifilmar.m3u8" },
+    { type: "hls", url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/960eed04-3c1a-4ad7-87dd-7b64f78d0b0c/2.m3u8" },
+    { type: "youtube", url: "HRYSQ90PZDY" }
 ];
 
 let currentStreamIndex = 0;
@@ -127,7 +115,7 @@ const glitchEffect = document.querySelector(".glitch");
 const tvContainer = document.querySelector(".tv-container");
 let hls = null;
 
-// Create YouTube iframe (hidden by default)
+// === YOUTUBE SETUP ===
 const youtubeIframe = document.createElement("iframe");
 youtubeIframe.style.display = "none";
 youtubeIframe.style.width = "100%";
@@ -137,7 +125,7 @@ youtubeIframe.setAttribute("allow", "autoplay");
 youtubeIframe.setAttribute("allowfullscreen", "1");
 tvContainer.appendChild(youtubeIframe);
 
-// Create channel changer button
+// === CHANNEL BUTTON ===
 function createChannelChanger() {
     const btn = document.createElement("div");
     btn.id = "channel-changer";
@@ -157,11 +145,11 @@ function createChannelChanger() {
     btn.style.fontSize = "1.5rem";
     btn.style.textShadow = "0 0 5px #f00";
     btn.addEventListener("click", switchToNextStream);
-    
+
     document.body.appendChild(btn);
 }
 
-// Initialize HLS.js player
+// === HLS INITIALIZATION ===
 function initPlayer() {
     if (Hls.isSupported()) {
         hls = new Hls();
@@ -176,7 +164,7 @@ function initPlayer() {
         hls.on(Hls.Events.ERROR, (event, data) => {
             console.error("HLS Error:", data);
             if (data.fatal) {
-                switch(data.type) {
+                switch (data.type) {
                     case Hls.ErrorTypes.NETWORK_ERROR:
                         hls.startLoad();
                         break;
@@ -206,63 +194,56 @@ function hideEffects() {
     }, 500);
 }
 
-// Load a stream
+// === STREAM LOADING ===
 function loadStream(stream) {
-    // Show loading effects
     glitchEffect.style.opacity = 1;
     snowEffect.style.opacity = 1;
-    
+
     if (stream.type === "hls") {
-        // Hide YouTube and show video element
         youtubeIframe.style.display = "none";
         videoElement.style.display = "block";
-        
+        videoElement.muted = false; // 👈 UNMUTE HLS
+        videoElement.volume = 1.0;
+
         if (hls) {
             hls.loadSource(stream.url);
             hls.attachMedia(videoElement);
         } else if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
             videoElement.src = stream.url;
         }
-    } 
-    else if (stream.type === "youtube") {
-        // Hide video element and show YouTube
+    } else if (stream.type === "youtube") {
         videoElement.style.display = "none";
         youtubeIframe.style.display = "block";
-        youtubeIframe.src = `https://www.youtube.com/embed/${stream.url}?autoplay=1&mute=1&enablejsapi=1`;
-        
-        // YouTube doesn't give us a good loaded event, so we'll hide effects after a delay
+        // 🔊 Removed mute=1 to enable sound
+        youtubeIframe.src = `https://www.youtube.com/embed/${stream.url}?autoplay=1&enablejsapi=1`;
+
         setTimeout(hideEffects, 2000);
     }
 }
 
-// Switch to next stream with static transition
 function switchToNextStream() {
-    // Show full glitch effect
     glitchEffect.style.opacity = 1;
     snowEffect.style.opacity = 1;
-    
-    // Stop current playback
+
     if (youtubeIframe.style.display === "block") {
-        youtubeIframe.src = ""; // Stop YouTube video
+        youtubeIframe.src = "";
     } else {
         videoElement.pause();
     }
-    
+
     setTimeout(() => {
         currentStreamIndex = (currentStreamIndex + 1) % streamUrls.length;
         loadStream(streamUrls[currentStreamIndex]);
-    }, 2000); // 2 seconds of static before switching
+    }, 2000);
 }
 
-// Initialize everything when the page loads
 document.addEventListener("DOMContentLoaded", () => {
     initPlayer();
     createChannelChanger();
-    
-    // Hide effects initially
+
     glitchEffect.style.opacity = 0;
     snowEffect.style.opacity = 0;
-    
+
     if (streamUrls.length > 0) {
         loadStream(streamUrls[currentStreamIndex]);
     } else {
