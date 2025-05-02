@@ -103,6 +103,10 @@ const vcrEffect = new VCREffect(canvas, {
 });
 
 const streamUrls = [
+    { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvBangla/index.m3u8" },
+    { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvEnglish/index.m3u8" },
+    { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvUrdu/index.m3u8" },
+    { type: "hls", url: "https://ap02.iqplay.tv:8082/iqb8002/d33ntv/playlist.m3u8" },
     { type: "hls", url: "https://live.presstv.ir/hls/ifilmar.m3u8" },
     { type: "hls", url: "https://d35j504z0x2vu2.cloudfront.net/v1/manifest/0bc8e8376bd8417a1b6761138aa41c26c7309312/bollywood-hd/960eed04-3c1a-4ad7-87dd-7b64f78d0b0c/2.m3u8" },
     { type: "youtube", url: "HRYSQ90PZDY" }
