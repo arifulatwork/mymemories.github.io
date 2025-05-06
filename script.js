@@ -103,7 +103,7 @@ const vcrEffect = new VCREffect(canvas, {
 });
 
 const streamUrls = [
-    { type: "hls", url: "https://itpolly.iptv.digijadoo.net/live/btv_world/chunks.m3u8" },
+    { type: "hls", url: "https://d1e7rcqq4o2ma.cloudfront.net/bpk-tv/1709/output/1709.m3u8" },
     { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvEnglish/index.m3u8" },
     { type: "hls", url: "https://dzkyvlfyge.erbvr.com/PeaceTvUrdu/index.m3u8" },
     { type: "hls", url: "https://boishakhi.sonarbanglatv.com/boishakhi/boishakhitv/index.m3u8" },
